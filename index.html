@@ -526,5 +526,33 @@
             });
         });
     </script>
+<!-- En tu admin.html, AÑADE ESTO antes del cierre del body: -->
+<script type="module">
+    // Importar authManager y verificar autenticación
+    import authManager from './js/auth-manager.js';
+    
+    document.addEventListener('DOMContentLoaded', async () => {
+        // Esperar a que authManager se inicialice
+        await authManager.init();
+        
+        // Verificar si hay usuario autenticado
+        const user = authManager.getCurrentUser();
+        const storeId = authManager.getCurrentStoreId();
+        
+        if (!user || !storeId) {
+            // Redirigir a login si no está autenticado
+            window.location.href = 'index.html';
+            return;
+        }
+        
+        // Inicializar AdminManager
+        import('./js/admin.js').then(({ default: AdminManager }) => {
+            window.adminManager = new AdminManager();
+        }).catch(error => {
+            console.error('Error cargando admin.js:', error);
+            authManager.showNotification('Error cargando el panel de administración', 'error');
+        });
+    });
+</script>
 </body>
 </html>

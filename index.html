@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tienda Digital - Iniciar Sesión</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Open+Sans:wght@300;400;600&display=swap" rel="stylesheet">
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
+</head>
+<body class="auth-page">
+    <div class="auth-container">
+        <div class="auth-header">
+            <div class="logo">
+                <i class="fas fa-store"></i>
+                <h1>Tienda Digital</h1>
+            </div>
+            <p class="tagline">Crea tu tienda online en minutos</p>
+        </div>
+
+        <div class="auth-tabs">
+            <button class="tab-btn active" data-tab="login">Iniciar Sesión</button>
+            <button class="tab-btn" data-tab="register">Registrarse</button>
+        </div>
+
+        <div class="auth-content">
+            <!-- Formulario de Login -->
+            <form id="login-form" class="auth-form active">
+                <div class="form-group">
+                    <label for="login-email">Email</label>
+                    <input type="email" id="login-email" required>
+                </div>
+                <div class="form-group">
+                    <label for="login-password">Contraseña</label>
+                    <input type="password" id="login-password" required>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">
+                    <i class="fas fa-sign-in-alt"></i> Iniciar Sesión
+                </button>
+                <div class="auth-links">
+                    <a href="#" id="forgot-password">¿Olvidaste tu contraseña?</a>
+                </div>
+            </form>
+
+            <!-- Formulario de Registro -->
+            <form id="register-form" class="auth-form">
+                <div class="form-group">
+                    <label for="register-email">Email</label>
+                    <input type="email" id="register-email" required>
+                </div>
+                <div class="form-group">
+                    <label for="register-store-name">Nombre de la Tienda</label>
+                    <input type="text" id="register-store-name" required>
+                </div>
+                <div class="form-group">
+                    <label for="register-password">Contraseña</label>
+                    <input type="password" id="register-password" required minlength="6">
+                    <small>Mínimo 6 caracteres</small>
+                </div>
+                <div class="form-group">
+                    <label for="register-confirm-password">Confirmar Contraseña</label>
+                    <input type="password" id="register-confirm-password" required minlength="6">
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">
+                    <i class="fas fa-user-plus"></i> Crear Cuenta
+                </button>
+            </form>
+
+            <!-- Formulario de Recuperación -->
+            <form id="recovery-form" class="auth-form">
+                <div class="form-group">
+                    <label for="recovery-email">Email</label>
+                    <input type="email" id="recovery-email" required>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">
+                    <i class="fas fa-envelope"></i> Enviar Instrucciones
+                </button>
+                <div class="auth-links">
+                    <a href="#" id="back-to-login">Volver al inicio de sesión</a>
+                </div>
+            </form>
+        </div>
+
+        <div class="auth-footer">
+            <p>© 2024 Tienda Digital. Todos los derechos reservados.</p>
+        </div>
+    </div>
+
+    <script src="js/firebase.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/utils.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Tabs
+            const tabBtns = document.querySelectorAll('.tab-btn');
+            const authForms = document.querySelectorAll('.auth-form');
+            
+            tabBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const tab = btn.dataset.tab;
+                    
+                    // Actualizar tabs activos
+                    tabBtns.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    
+                    // Mostrar formulario correspondiente
+                    authForms.forEach(form => form.classList.remove('active'));
+                    document.getElementById(`${tab}-form`).classList.add('active');
+                });
+            });
+            
+            // Login
+            document.getElementById('login-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                const email = document.getElementById('login-email').value;
+                const password = document.getElementById('login-password').value;
+                
+                try {
+                    await authManager.login(email, password);
+                    Utils.showNotification('Inicio de sesión exitoso', 'success');
+                } catch (error) {
+                    Utils.showNotification(error.message, 'error');
+                }
+            });
+            
+            // Registro
+            document.getElementById('register-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                const email = document.getElementById('register-email').value;
+                const storeName = document.getElementById('register-store-name').value;
+                const password = document.getElementById('register-password').value;
+                const confirmPassword = document.getElementById('register-confirm-password').value;
+                
+                // Validaciones
+                if (!Utils.validateEmail(email)) {
+                    Utils.showNotification('Email no válido', 'error');
+                    return;
+                }
+                
+                if (!Utils.validatePassword(password)) {
+                    Utils.showNotification('La contraseña debe tener al menos 6 caracteres', 'error');
+                    return;
+                }
+                
+                if (password !== confirmPassword) {
+                    Utils.showNotification('Las contraseñas no coinciden', 'error');
+                    return;
+                }
+                
+                if (!storeName.trim()) {
+                    Utils.showNotification('El nombre de la tienda es obligatorio', 'error');
+                    return;
+                }
+                
+                try {
+                    const result = await authManager.register(email, password, storeName);
+                    Utils.showNotification('Cuenta creada exitosamente', 'success');
+                    
+                    // Mostrar link de la tienda
+                    setTimeout(() => {
+                        const storeUrl = `${window.location.origin}/store.html?storeId=${result.storeId}`;
+                        alert(`¡Tienda creada!\n\nTu tienda estará disponible en:\n${storeUrl}\n\nGuarda este enlace para compartir con tus clientes.`);
+                    }, 1000);
+                } catch (error) {
+                    Utils.showNotification(error.message, 'error');
+                }
+            });
+            
+            // Recuperación de contraseña
+            document.getElementById('forgot-password').addEventListener('click', (e) => {
+                e.preventDefault();
+                authForms.forEach(form => form.classList.remove('active'));
+                document.getElementById('recovery-form').classList.add('active');
+            });
+            
+            document.getElementById('back-to-login').addEventListener('click', (e) => {
+                e.preventDefault();
+                authForms.forEach(form => form.classList.remove('active'));
+                document.getElementById('login-form').classList.add('active');
+                tabBtns.forEach(b => b.classList.remove('active'));
+                document.querySelector('[data-tab="login"]').classList.add('active');
+            });
+            
+            document.getElementById('recovery-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                const email = document.getElementById('recovery-email').value;
+                
+                try {
+                    await authManager.resetPassword(email);
+                    Utils.showNotification('Si este correo existe, se enviaron instrucciones', 'success');
+                    
+                    // Volver al login después de 3 segundos
+                    setTimeout(() => {
+                        authForms.forEach(form => form.classList.remove('active'));
+                        document.getElementById('login-form').classList.add('active');
+                        tabBtns.forEach(b => b.classList.remove('active'));
+                        document.querySelector('[data-tab="login"]').classList.add('active');
+                    }, 3000);
+                } catch (error) {
+                    Utils.showNotification(error.message, 'error');
+                }
+            });
+        });
+    </script>
+</body>
+</html>

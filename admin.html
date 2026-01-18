@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Administración</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Open+Sans:wght@300;400;600&display=swap" rel="stylesheet">
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
+</head>
+<body class="admin-page">
+    <!-- Barra lateral -->
+    <aside class="admin-sidebar">
+        <div class="sidebar-header">
+            <div class="store-info" id="store-info-header">
+                <div class="store-logo-placeholder">
+                    <i class="fas fa-store"></i>
+                </div>
+                <h3 id="store-name-header">Cargando...</h3>
+            </div>
+            <button class="sidebar-toggle" id="sidebar-toggle">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+        
+        <nav class="sidebar-nav">
+            <ul>
+                <li>
+                    <a href="#" class="nav-link active" data-section="dashboard">
+                        <i class="fas fa-tachometer-alt"></i>
+                        <span>Dashboard</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#" class="nav-link" data-section="store-settings">
+                        <i class="fas fa-store"></i>
+                        <span>Datos de Tienda</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#" class="nav-link" data-section="categories">
+                        <i class="fas fa-list"></i>
+                        <span>Categorías</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#" class="nav-link" data-section="products">
+                        <i class="fas fa-box"></i>
+                        <span>Productos</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#" class="nav-link" data-section="promotions">
+                        <i class="fas fa-tag"></i>
+                        <span>Promociones</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#" class="nav-link" data-section="preview">
+                        <i class="fas fa-eye"></i>
+                        <span>Vista Previa</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+        
+        <div class="sidebar-footer">
+            <button id="logout-btn" class="btn btn-danger btn-block">
+                <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+            </button>
+        </div>
+    </aside>
+
+    <!-- Contenido principal -->
+    <main class="admin-main">
+        <header class="admin-header">
+            <h1 id="section-title">Dashboard</h1>
+            <div class="header-actions">
+                <a href="#" id="view-store-btn" class="btn btn-outline" target="_blank">
+                    <i class="fas fa-external-link-alt"></i> Ver Tienda
+                </a>
+            </div>
+        </header>
+
+        <div class="admin-content">
+            <!-- Dashboard -->
+            <section id="dashboard-section" class="admin-section active">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-box"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 id="products-count">0</h3>
+                            <p>Productos</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-list"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 id="categories-count">0</h3>
+                            <p>Categorías</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-tag"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 id="promotions-count">0</h3>
+                            <p>Promociones</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-link"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3>Link</h3>
+                            <p id="store-link">Cargando...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="quick-actions">
+                    <h2>Acciones Rápidas</h2>
+                    <div class="actions-grid">
+                        <button class="action-btn" data-section="products">
+                            <i class="fas fa-plus"></i>
+                            <span>Agregar Producto</span>
+                        </button>
+                        <button class="action-btn" data-section="categories">
+                            <i class="fas fa-plus"></i>
+                            <span>Agregar Categoría</span>
+                        </button>
+                        <button class="action-btn" data-section="promotions">
+                            <i class="fas fa-plus"></i>
+                            <span>Agregar Promoción</span>
+                        </button>
+                        <button class="action-btn" data-section="store-settings">
+                            <i class="fas fa-cog"></i>
+                            <span>Configurar Tienda</span>
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Configuración de Tienda -->
+            <section id="store-settings-section" class="admin-section">
+                <div class="section-header">
+                    <h2>Configuración de Tienda</h2>
+                    <button id="save-store-settings" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Guardar Cambios
+                    </button>
+                </div>
+
+                <form id="store-settings-form">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="store-name">Nombre de la Tienda *</label>
+                            <input type="text" id="store-name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="store-whatsapp">Número de WhatsApp *</label>
+                            <input type="text" id="store-whatsapp" placeholder="+584123456789" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="store-address">Dirección *</label>
+                            <input type="text" id="store-address" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="store-map">Link de Google Maps</label>
+                            <input type="url" id="store-map" placeholder="https://maps.google.com/...">
+                        </div>
+                        <div class="form-group">
+                            <label for="store-primary-color">Color Principal</label>
+                            <input type="color" id="store-primary-color" value="#001f3f">
+                        </div>
+                        <div class="form-group">
+                            <label for="store-secondary-color">Color Secundario</label>
+                            <input type="color" id="store-secondary-color" value="#0074D9">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Logo de la Tienda</label>
+                        <div class="image-upload-container">
+                            <div class="image-preview" id="store-logo-preview">
+                                <div class="image-preview-placeholder">
+                                    <i class="fas fa-store"></i>
+                                    <span>Logo de la tienda</span>
+                                </div>
+                            </div>
+                            <div class="image-upload-actions">
+                                <input type="file" id="store-logo-input" accept="image/png, image/jpeg, image/jpg" style="display: none;">
+                                <button type="button" id="store-logo-upload" class="btn btn-outline">
+                                    <i class="fas fa-upload"></i> Subir Logo
+                                </button>
+                                <button type="button" id="store-logo-remove" class="btn-text" style="display: none;">
+                                    <i class="fas fa-trash"></i> Eliminar
+                                </button>
+                            </div>
+                            <small class="image-hint">Formatos aceptados: PNG, JPG. Tamaño máximo: 5MB.</small>
+                        </div>
+                    </div>
+                </form>
+            </section>
+
+            <!-- Gestión de Categorías -->
+            <section id="categories-section" class="admin-section">
+                <div class="section-header">
+                    <h2>Gestión de Categorías</h2>
+                    <button id="add-category-btn" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Agregar Categoría
+                    </button>
+                </div>
+
+                <div class="table-container">
+                    <table id="categories-table">
+                        <thead>
+                            <tr>
+                                <th>Nombre</th>
+                                <th>Descripción</th>
+                                <th>Productos</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="categories-table-body">
+                            <!-- Categorías se cargarán aquí -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Gestión de Productos -->
+            <section id="products-section" class="admin-section">
+                <div class="section-header">
+                    <h2>Gestión de Productos</h2>
+                    <div class="header-actions-group">
+                        <div class="search-container">
+                            <input type="text" id="products-search" placeholder="Buscar productos...">
+                            <button id="products-search-btn" class="search-btn">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </div>
+                        <button id="add-product-btn" class="btn btn-primary">
+                            <i class="fas fa-plus"></i> Agregar Producto
+                        </button>
+                    </div>
+                </div>
+
+                <div class="products-grid" id="products-grid">
+                    <!-- Productos se cargarán aquí -->
+                </div>
+            </section>
+
+            <!-- Gestión de Promociones -->
+            <section id="promotions-section" class="admin-section">
+                <div class="section-header">
+                    <h2>Promociones y Modales</h2>
+                    <button id="add-promotion-btn" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Agregar Promoción
+                    </button>
+                </div>
+
+                <div class="promotions-grid" id="promotions-grid">
+                    <!-- Promociones se cargarán aquí -->
+                </div>
+            </section>
+
+            <!-- Vista Previa -->
+            <section id="preview-section" class="admin-section">
+                <div class="section-header">
+                    <h2>Vista Previa de la Tienda</h2>
+                    <button id="refresh-preview" class="btn btn-outline">
+                        <i class="fas fa-sync"></i> Actualizar Vista
+                    </button>
+                </div>
+
+                <div class="preview-container">
+                    <iframe id="store-preview" style="
+                        width: 100%;
+                        height: 600px;
+                        border: 2px solid #e0e0e0;
+                        border-radius: 8px;
+                    "></iframe>
+                    <p class="preview-note">
+                        <i class="fas fa-info-circle"></i>
+                        Esta es una vista previa. Los cambios pueden tardar unos segundos en reflejarse.
+                    </p>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Modal para Categorías -->
+    <div id="category-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="category-modal-title">Agregar Categoría</h3>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="category-form">
+                    <div class="form-group">
+                        <label for="category-name">Nombre *</label>
+                        <input type="text" id="modal-category-name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="category-description">Descripción</label>
+                        <textarea id="modal-category-description" rows="3"></textarea>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary close-modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Guardar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para Productos -->
+    <div id="product-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="product-modal-title">Agregar Producto</h3>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="product-form">
+                    <div class="form-group">
+                        <label for="product-name">Nombre *</label>
+                        <input type="text" id="modal-product-name" required>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="product-price">Precio ($) *</label>
+                            <input type="number" id="modal-product-price" min="0" step="0.01" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="product-category">Categoría *</label>
+                            <select id="modal-product-category" required>
+                                <!-- Cargar categorías dinámicamente -->
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="product-description">Descripción *</label>
+                        <textarea id="modal-product-description" rows="4" required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="product-image">Imagen *</label>
+                        <div class="image-upload-container">
+                            <div class="image-preview" id="product-image-preview">
+                                <div class="image-preview-placeholder">
+                                    <i class="fas fa-image"></i>
+                                    <span>Vista previa de la imagen</span>
+                                </div>
+                            </div>
+                            <div class="image-upload-actions">
+                                <input type="file" id="modal-product-image-input" accept="image/png, image/jpeg, image/jpg" style="display: none;">
+                                <button type="button" id="modal-product-upload" class="btn btn-outline">
+                                    <i class="fas fa-upload"></i> Subir Imagen
+                                </button>
+                                <button type="button" id="modal-product-remove" class="btn-text" style="display: none;">
+                                    <i class="fas fa-trash"></i> Eliminar
+                                </button>
+                            </div>
+                            <small class="image-hint">Formatos aceptados: PNG, JPG. Tamaño máximo: 5MB. *Obligatorio</small>
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary close-modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Guardar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para Promociones -->
+    <div id="promotion-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="promotion-modal-title">Agregar Promoción</h3>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="promotion-form">
+                    <div class="form-group">
+                        <label for="promotion-title">Título *</label>
+                        <input type="text" id="modal-promotion-title" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="promotion-description">Descripción *</label>
+                        <textarea id="modal-promotion-description" rows="3" required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="promotion-type">Tipo</label>
+                        <select id="modal-promotion-type">
+                            <option value="discount">Descuento</option>
+                            <option value="shipping">Envío Gratis</option>
+                            <option value="offer">Oferta Especial</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="promotion-active">Estado</label>
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="modal-promotion-active" checked>
+                            <label for="modal-promotion-active">Activa</label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="promotion-image">Imagen (opcional)</label>
+                        <div class="image-upload-container">
+                            <div class="image-preview" id="promotion-image-preview">
+                                <div class="image-preview-placeholder">
+                                    <i class="fas fa-image"></i>
+                                    <span>Vista previa de la imagen</span>
+                                </div>
+                            </div>
+                            <div class="image-upload-actions">
+                                <input type="file" id="modal-promotion-image-input" accept="image/png, image/jpeg, image/jpg" style="display: none;">
+                                <button type="button" id="modal-promotion-upload" class="btn btn-outline">
+                                    <i class="fas fa-upload"></i> Subir Imagen
+                                </button>
+                                <button type="button" id="modal-promotion-remove" class="btn-text" style="display: none;">
+                                    <i class="fas fa-trash"></i> Eliminar
+                                </button>
+                            </div>
+                            <small class="image-hint">Formatos aceptados: PNG, JPG. Tamaño máximo: 5MB.</small>
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary close-modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Guardar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/firebase.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/admin.js"></script>
+</body>
+</html>

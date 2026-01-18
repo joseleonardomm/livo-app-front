@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tienda - Cargando...</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Open+Sans:wght@300;400;600&display=swap" rel="stylesheet">
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+</head>
+<body class="store-page">
+    <!-- Barra lateral de categorías -->
+    <aside id="sidebar" class="sidebar">
+        <div class="sidebar-header">
+            <div class="store-logo" id="store-logo">
+                <div class="logo-placeholder">
+                    <i class="fas fa-store"></i>
+                </div>
+                <h3 id="sidebar-store-name">Cargando...</h3>
+            </div>
+            <button id="close-sidebar" class="close-btn"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="categories-container">
+            <h4><i class="fas fa-list"></i> Categorías</h4>
+            <ul id="categories-list" class="categories-list">
+                <!-- Categorías se cargarán dinámicamente -->
+            </ul>
+        </div>
+        <div class="sidebar-footer">
+            <div class="location-info">
+                <i class="fas fa-map-marker-alt"></i>
+                <span id="sidebar-address">Cargando...</span>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Overlay para sidebar móvil -->
+    <div id="sidebar-overlay" class="sidebar-overlay"></div>
+
+    <!-- Contenido principal -->
+    <div class="main-content">
+        <!-- Header -->
+        <header class="header">
+            <div class="container">
+                <div class="header-top">
+                    <button id="menu-toggle" class="menu-toggle">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <div class="logo-container">
+                        <div class="store-logo-header" id="store-logo-header">
+                            <div class="logo-placeholder">
+                                <i class="fas fa-store"></i>
+                            </div>
+                            <div class="logo-text">
+                                <h1 id="store-name-header">Cargando...</h1>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="header-actions">
+                        <div class="search-container">
+                            <input type="text" id="search-input" placeholder="Buscar productos...">
+                            <button id="search-btn" class="search-btn"><i class="fas fa-search"></i></button>
+                        </div>
+                        <button id="cart-btn" class="cart-btn">
+                            <i class="fas fa-shopping-cart"></i>
+                            <span id="cart-count" class="cart-count">0</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Contenido principal -->
+        <main class="container">
+            <!-- Sección de promociones -->
+            <section class="promotions-section" id="promotions-section">
+                <!-- Promociones se cargarán dinámicamente -->
+            </section>
+
+            <!-- Sección de productos -->
+            <section class="products-section">
+                <div class="section-header">
+                    <h2 id="products-title"><i class="fas fa-box"></i> Productos</h2>
+                    <div class="category-filter" id="category-filter">
+                        <!-- Filtro de categorías se cargará dinámicamente -->
+                    </div>
+                </div>
+                <div id="products-container" class="products-container">
+                    <!-- Los productos se cargarán dinámicamente -->
+                </div>
+            </section>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <div class="container">
+                <div class="footer-content">
+                    <div class="footer-section">
+                        <div class="footer-logo" id="footer-logo">
+                            <div class="logo-placeholder">
+                                <i class="fas fa-store"></i>
+                            </div>
+                        </div>
+                        <h3 id="footer-store-name">Cargando...</h3>
+                        <p id="footer-store-description">Tu tienda de confianza</p>
+                    </div>
+                    <div class="footer-section">
+                        <h4>Contacto</h4>
+                        <p><i class="fas fa-map-marker-alt"></i> <span id="footer-address">Cargando...</span></p>
+                        <p><i class="fab fa-whatsapp"></i> <span id="footer-whatsapp">Cargando...</span></p>
+                    </div>
+                    <div class="footer-section">
+                        <h4>Enlaces</h4>
+                        <a href="#" id="map-link" class="footer-link">
+                            <i class="fas fa-map"></i> Ver en Google Maps
+                        </a>
+                        <a href="#" id="whatsapp-link" class="footer-link">
+                            <i class="fab fa-whatsapp"></i> Contactar por WhatsApp
+                        </a>
+                    </div>
+                </div>
+                <div class="footer-bottom">
+                    <p>&copy; 2024 <span id="copyright-store-name">Tienda</span>. Todos los derechos reservados.</p>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Modal del carrito -->
+    <div id="cart-modal" class="modal cart-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-shopping-cart"></i> Carrito de Compras</h3>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="cart-items-container">
+                    <!-- Los productos del carrito se cargarán dinámicamente -->
+                    <div class="empty-cart" id="empty-cart">
+                        <i class="fas fa-shopping-cart"></i>
+                        <p>Tu carrito está vacío</p>
+                    </div>
+                </div>
+                <div class="cart-summary">
+                    <div class="cart-total">
+                        <span>Total:</span>
+                        <span id="cart-total-amount">$0.00</span>
+                    </div>
+                    <div class="cart-actions">
+                        <button id="clear-cart-btn" class="btn btn-outline">Vaciar Carrito</button>
+                        <button id="checkout-btn" class="btn btn-primary">
+                            <i class="fab fa-whatsapp"></i> Comprar por WhatsApp
+                        </button>
+                    </div>
+                    <div class="whatsapp-info">
+                        <p>Se redirigirá a WhatsApp con el número: <span id="whatsapp-number">Cargando...</span></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modales de promoción -->
+    <div id="promotion-modals-container">
+        <!-- Los modales de promoción se cargarán dinámicamente -->
+    </div>
+
+    <script src="js/firebase.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/store.js"></script>
+</body>
+</html>

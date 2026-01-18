@@ -1,127 +1,108 @@
-class AuthManager {
-  constructor() {
-    this.auth = firebase.auth();
-    this.currentUser = null;
-    this.initAuthStateListener();
-  }
+// auth.js - Manejo de autenticación
+import { auth, db } from './firebase.js';
+import { 
+    createUserWithEmailAndPassword,
+    signInWithEmailAndPassword,
+    signOut,
+    sendPasswordResetEmail,
+    updateProfile,
+    onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
 
-  // Escuchar cambios en el estado de autenticación
-  initAuthStateListener() {
-    this.auth.onAuthStateChanged((user) => {
-      this.currentUser = user;
-      
-      // Si el usuario está logueado y está en index.html, redirigir a admin
-      if (user && window.location.pathname.includes('index.html')) {
-        window.location.href = 'admin.html';
-      }
-      
-      // Si no hay usuario y está en admin.html, redirigir a index
-      if (!user && window.location.pathname.includes('admin.html')) {
-        window.location.href = 'index.html';
-      }
-    });
-  }
+import { 
+    doc, 
+    setDoc, 
+    getDoc,
+    serverTimestamp 
+} from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 
-  // Registro de nueva tienda
-  async register(email, password, storeName) {
-    try {
-      // Crear usuario en Firebase Auth
-      const userCredential = await this.auth.createUserWithEmailAndPassword(email, password);
-      const user = userCredential.user;
-      
-      // Crear documento de tienda en Firestore
-      const storeId = this.generateStoreId();
-      const storeData = {
-        ownerUid: user.uid,
-        storeInfo: {
-          name: storeName,
-          email: email,
-          whatsapp: '',
-          address: '',
-          mapLink: '',
-          logoUrl: '',
-          colors: {
-            primary: '#001f3f',
-            secondary: '#0074D9'
-          },
-          createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+export class AuthManager {
+    constructor() {
+        this.currentUser = null;
+        this.initAuthStateListener();
+    }
+
+    initAuthStateListener() {
+        onAuthStateChanged(auth, (user) => {
+            this.currentUser = user;
+            console.log('Usuario actual:', user);
+        });
+    }
+
+    async register(email, password, storeName) {
+        try {
+            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+            const user = userCredential.user;
+            
+            // Crear storeId único
+            const storeId = 'store_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            
+            // Crear documento de tienda
+            const storeData = {
+                ownerUid: user.uid,
+                storeInfo: {
+                    name: storeName,
+                    email: email,
+                    whatsapp: '',
+                    address: '',
+                    mapLink: '',
+                    logoUrl: '',
+                    colors: {
+                        primary: '#001f3f',
+                        secondary: '#0074D9'
+                    },
+                    createdAt: serverTimestamp(),
+                    updatedAt: serverTimestamp()
+                }
+            };
+            
+            await setDoc(doc(db, 'stores', storeId), storeData);
+            
+            // Actualizar perfil del usuario
+            await updateProfile(user, { displayName: storeId });
+            
+            return { success: true, storeId, user };
+        } catch (error) {
+            console.error('Error en registro:', error);
+            throw error;
         }
-      };
-      
-      await db.collection('stores').doc(storeId).set(storeData);
-      
-      // Guardar storeId en el perfil del usuario
-      await user.updateProfile({
-        displayName: storeId
-      });
-      
-      return { success: true, storeId };
-    } catch (error) {
-      console.error('Error en registro:', error);
-      throw error;
     }
-  }
 
-  // Login
-  async login(email, password) {
-    try {
-      await this.auth.signInWithEmailAndPassword(email, password);
-      return { success: true };
-    } catch (error) {
-      console.error('Error en login:', error);
-      throw error;
+    async login(email, password) {
+        try {
+            const userCredential = await signInWithEmailAndPassword(auth, email, password);
+            return { success: true, user: userCredential.user };
+        } catch (error) {
+            console.error('Error en login:', error);
+            throw error;
+        }
     }
-  }
 
-  // Recuperar contraseña
-  async resetPassword(email) {
-    try {
-      await this.auth.sendPasswordResetEmail(email);
-      return { success: true };
-    } catch (error) {
-      console.error('Error en reset password:', error);
-      throw error;
+    async logout() {
+        try {
+            await signOut(auth);
+            return { success: true };
+        } catch (error) {
+            console.error('Error en logout:', error);
+            throw error;
+        }
     }
-  }
 
-  // Cerrar sesión
-  async logout() {
-    try {
-      await this.auth.signOut();
-      window.location.href = 'index.html';
-    } catch (error) {
-      console.error('Error en logout:', error);
-      throw error;
+    async resetPassword(email) {
+        try {
+            await sendPasswordResetEmail(auth, email);
+            return { success: true };
+        } catch (error) {
+            console.error('Error en reset password:', error);
+            throw error;
+        }
     }
-  }
 
-  // Obtener storeId del usuario actual
-  getCurrentStoreId() {
-    return this.auth.currentUser?.displayName || null;
-  }
-
-  // Generar ID único para la tienda
-  generateStoreId() {
-    return 'store_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-  }
-
-  // Verificar si el usuario es propietario de la tienda
-  async verifyStoreOwnership(storeId) {
-    try {
-      const user = this.auth.currentUser;
-      if (!user) return false;
-      
-      const storeDoc = await db.collection('stores').doc(storeId).get();
-      if (!storeDoc.exists) return false;
-      
-      return storeDoc.data().ownerUid === user.uid;
-    } catch (error) {
-      console.error('Error verificando propiedad:', error);
-      return false;
+    getCurrentUser() {
+        return auth.currentUser;
     }
-  }
+
+    getCurrentStoreId() {
+        return auth.currentUser?.displayName;
+    }
 }
-
-// Instancia global
-const authManager = new AuthManager();

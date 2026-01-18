@@ -7,10 +7,7 @@
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Open+Sans:wght@300;400;600&display=swap" rel="stylesheet">
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
+    <!-- Quitamos los scripts de Firebase compat y usaremos módulos ES6 -->
 </head>
 <body class="auth-page">
     <div class="auth-container">
@@ -90,10 +87,212 @@
         </div>
     </div>
 
-    <script src="js/firebase.js"></script>
-    <script src="js/auth.js"></script>
-    <script src="js/utils.js"></script>
-    <script>
+    <script type="module">
+        // Importar Firebase y funciones de autenticación
+        import { auth } from './js/firebase.js';
+        import { 
+            createUserWithEmailAndPassword,
+            signInWithEmailAndPassword,
+            sendPasswordResetEmail,
+            updateProfile,
+            onAuthStateChanged
+        } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
+        
+        import { 
+            doc, 
+            setDoc, 
+            getDoc,
+            collection,
+            serverTimestamp 
+        } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+        
+        import { db } from './js/firebase.js';
+
+        // Clase AuthManager actualizada para Firebase v9
+        class AuthManager {
+            constructor() {
+                this.currentUser = null;
+                this.initAuthStateListener();
+            }
+
+            // Escuchar cambios en el estado de autenticación
+            initAuthStateListener() {
+                onAuthStateChanged(auth, (user) => {
+                    this.currentUser = user;
+                    
+                    // Si el usuario está logueado y está en index.html, redirigir a admin
+                    if (user && window.location.pathname.includes('index.html')) {
+                        window.location.href = 'admin.html';
+                    }
+                    
+                    // Si no hay usuario y está en admin.html, redirigir a index
+                    if (!user && window.location.pathname.includes('admin.html')) {
+                        window.location.href = 'index.html';
+                    }
+                });
+            }
+
+            // Registro de nueva tienda
+            async register(email, password, storeName) {
+                try {
+                    // Crear usuario en Firebase Auth
+                    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                    const user = userCredential.user;
+                    
+                    // Crear documento de tienda en Firestore
+                    const storeId = this.generateStoreId();
+                    const storeData = {
+                        ownerUid: user.uid,
+                        storeInfo: {
+                            name: storeName,
+                            email: email,
+                            whatsapp: '',
+                            address: '',
+                            mapLink: '',
+                            logoUrl: '',
+                            colors: {
+                                primary: '#001f3f',
+                                secondary: '#0074D9'
+                            },
+                            createdAt: serverTimestamp(),
+                            updatedAt: serverTimestamp()
+                        }
+                    };
+                    
+                    await setDoc(doc(db, 'stores', storeId), storeData);
+                    
+                    // Guardar storeId en el perfil del usuario
+                    await updateProfile(user, {
+                        displayName: storeId
+                    });
+                    
+                    return { success: true, storeId };
+                } catch (error) {
+                    console.error('Error en registro:', error);
+                    throw error;
+                }
+            }
+
+            // Login
+            async login(email, password) {
+                try {
+                    await signInWithEmailAndPassword(auth, email, password);
+                    return { success: true };
+                } catch (error) {
+                    console.error('Error en login:', error);
+                    throw error;
+                }
+            }
+
+            // Recuperar contraseña
+            async resetPassword(email) {
+                try {
+                    await sendPasswordResetEmail(auth, email);
+                    return { success: true };
+                } catch (error) {
+                    console.error('Error en reset password:', error);
+                    throw error;
+                }
+            }
+
+            // Cerrar sesión
+            async logout() {
+                try {
+                    await auth.signOut();
+                    window.location.href = 'index.html';
+                } catch (error) {
+                    console.error('Error en logout:', error);
+                    throw error;
+                }
+            }
+
+            // Obtener storeId del usuario actual
+            getCurrentStoreId() {
+                return auth.currentUser?.displayName || null;
+            }
+
+            // Generar ID único para la tienda
+            generateStoreId() {
+                return 'store_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            }
+
+            // Verificar si el usuario es propietario de la tienda
+            async verifyStoreOwnership(storeId) {
+                try {
+                    const user = auth.currentUser;
+                    if (!user) return false;
+                    
+                    const storeDoc = await getDoc(doc(db, 'stores', storeId));
+                    if (!storeDoc.exists()) return false;
+                    
+                    return storeDoc.data().ownerUid === user.uid;
+                } catch (error) {
+                    console.error('Error verificando propiedad:', error);
+                    return false;
+                }
+            }
+        }
+
+        // Instancia global
+        const authManager = new AuthManager();
+
+        // Función de utilidad para mostrar notificaciones
+        function showNotification(message, type = 'info', duration = 3000) {
+            // Eliminar notificaciones anteriores
+            const existingNotifications = document.querySelectorAll('.notification');
+            existingNotifications.forEach(n => n.remove());
+            
+            // Crear notificación
+            const notification = document.createElement('div');
+            notification.className = `notification notification-${type}`;
+            notification.innerHTML = `
+                <i class="fas fa-${type === 'success' ? 'check' : type === 'error' ? 'exclamation' : 'info'}-circle"></i>
+                <span>${message}</span>
+            `;
+            
+            // Estilos
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 15px 20px;
+                border-radius: 8px;
+                background: ${type === 'success' ? '#2ECC40' : type === 'error' ? '#FF4136' : '#0074D9'};
+                color: white;
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                z-index: 10000;
+                animation: slideInRight 0.3s ease;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            `;
+            
+            // Agregar animación
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes slideInRight {
+                    from { transform: translateX(100%); opacity: 0; }
+                    to { transform: translateX(0); opacity: 1; }
+                }
+            `;
+            document.head.appendChild(style);
+            
+            document.body.appendChild(notification);
+            
+            // Auto-eliminar
+            setTimeout(() => {
+                notification.remove();
+                style.remove();
+            }, duration);
+        }
+
+        // Validar email
+        function validateEmail(email) {
+            const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return re.test(email);
+        }
+
+        // Event listeners cuando el DOM esté listo
         document.addEventListener('DOMContentLoaded', () => {
             // Tabs
             const tabBtns = document.querySelectorAll('.tab-btn');
@@ -122,9 +321,9 @@
                 
                 try {
                     await authManager.login(email, password);
-                    Utils.showNotification('Inicio de sesión exitoso', 'success');
+                    showNotification('Inicio de sesión exitoso', 'success');
                 } catch (error) {
-                    Utils.showNotification(error.message, 'error');
+                    showNotification(error.message, 'error');
                 }
             });
             
@@ -138,29 +337,29 @@
                 const confirmPassword = document.getElementById('register-confirm-password').value;
                 
                 // Validaciones
-                if (!Utils.validateEmail(email)) {
-                    Utils.showNotification('Email no válido', 'error');
+                if (!validateEmail(email)) {
+                    showNotification('Email no válido', 'error');
                     return;
                 }
                 
-                if (!Utils.validatePassword(password)) {
-                    Utils.showNotification('La contraseña debe tener al menos 6 caracteres', 'error');
+                if (password.length < 6) {
+                    showNotification('La contraseña debe tener al menos 6 caracteres', 'error');
                     return;
                 }
                 
                 if (password !== confirmPassword) {
-                    Utils.showNotification('Las contraseñas no coinciden', 'error');
+                    showNotification('Las contraseñas no coinciden', 'error');
                     return;
                 }
                 
                 if (!storeName.trim()) {
-                    Utils.showNotification('El nombre de la tienda es obligatorio', 'error');
+                    showNotification('El nombre de la tienda es obligatorio', 'error');
                     return;
                 }
                 
                 try {
                     const result = await authManager.register(email, password, storeName);
-                    Utils.showNotification('Cuenta creada exitosamente', 'success');
+                    showNotification('Cuenta creada exitosamente', 'success');
                     
                     // Mostrar link de la tienda
                     setTimeout(() => {
@@ -168,7 +367,7 @@
                         alert(`¡Tienda creada!\n\nTu tienda estará disponible en:\n${storeUrl}\n\nGuarda este enlace para compartir con tus clientes.`);
                     }, 1000);
                 } catch (error) {
-                    Utils.showNotification(error.message, 'error');
+                    showNotification(error.message, 'error');
                 }
             });
             
@@ -194,7 +393,7 @@
                 
                 try {
                     await authManager.resetPassword(email);
-                    Utils.showNotification('Si este correo existe, se enviaron instrucciones', 'success');
+                    showNotification('Si este correo existe, se enviaron instrucciones', 'success');
                     
                     // Volver al login después de 3 segundos
                     setTimeout(() => {
@@ -204,7 +403,7 @@
                         document.querySelector('[data-tab="login"]').classList.add('active');
                     }, 3000);
                 } catch (error) {
-                    Utils.showNotification(error.message, 'error');
+                    showNotification(error.message, 'error');
                 }
             });
         });
